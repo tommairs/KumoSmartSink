@@ -1,0 +1,40 @@
+############################################
+# Behave.toml is a set of directive for 
+# per-domain behaviours.
+# Incoming messages are handled in the
+# following ways:
+# - mail will be bounced (5xx), Deferred (4xx), or accepted (250)
+#    based on the percentages in the file per domain
+# - TBD: will add oob and fbl responses in the future
+# - TBD: might add opens and clicks in the future
+#
+#
+############################################
+
+[yahoo.com]
+  bounce 20
+  defer  50
+  # all remailing will be accepted and dropped
+
+[hotmail.com]
+  bounce 5
+  defer  10
+
+[aol.com]
+  bounce 20
+  defer  20
+
+[gmail.com]
+  bounce 10
+  defer  20
+
+[att.com]
+  bounce 20
+  defer  20
+
+[comcast.com]
+  bounce 40
+  defer  20
+
+
+
