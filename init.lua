@@ -88,7 +88,7 @@ kumo.on('init', function()
   for _, port in ipairs { 25, 2025, 587 } do
     kumo.start_esmtp_listener {
       listen = '0:' .. tostring(port),
-      relay_hosts = {'0', '::0'},
+      relay_hosts = {'0.0.0.0/0', '::0/0'},
       banner = "KumoMTA Sink Server and Reflector.",
       hostname = "az.ksink.aasland.com",
       max_messages_per_connection = 10,
@@ -109,6 +109,8 @@ cached_toml_load = kumo.memoize(kumo.toml_load,{name='cache-toml-files-for-1-hou
 --[[ ================================================================================== ]]--
 --          Load important globals here
 --[[ ================================================================================== ]]--
+
+
 
 -----------------------------------------------------
 --[[ Define IP Egress Sources and Pools ]]--
@@ -152,20 +154,96 @@ end)
 local dkim_sign = require 'policy-extras.dkim_sign'
 local dkim_signer = dkim_sign:setup({'/opt/kumomta/etc/policy/dkim_data.toml'})
 
+
+----------------------------------------------------------------------------
+--[[ Fake bounce reflector function ]]--
+----------------------------------------------------------------------------
+function bounce_sim(msg)
+  local sim_result = "NotSet"
+  local domain = msg:recipient().domain
+  local fake_domain = ""
+  fake_domain = string.match(domain,'-[a-z0-9]*') -- assuming domain - not-yahoo.aasland.com
+  if (fake_domain ~= "" and fake_domain ~= nil) then 
+    fake_domain = string.gsub(fake_domain,"-","")
+    fake_domain = fake_domain .. ".com"
+  end 
+  local behave = kumo.toml_load("/opt/kumomta/etc/policy/behave.toml")
+  if behave[fake_domain] ~= nil then
+    print ("Table exists")
+
+    local bounce_rate = behave[fake_domain].bounce
+    local defer_rate = behave[fake_domain].defer
+    if bounce_rate <= defer_rate then
+      lobad_rate = 'bounce_rate'
+    else
+      lobad_rate = 'defer_rate'
+    end
+    print ("fake domain is " .. fake_domain .. "")
+    print ("bounce rate is " .. bounce_rate .. "")
+    print ("defer rate is " .. defer_rate .. "")
+    print ("Lower value is " .. lobad_rate)
+
+
+    -- Get a random number between 1 and 100
+    -- if it is 0 to (lower-of-bounce-and-defer-rate) send bounce code
+    -- if it is (higher-of-bounce-and-defer-rate) to 100 then send defer code
+    -- if it fell through, send 250OK
+    rnd_val = math.random(100)
+    print ("Random value is " .. rnd_val)
+    if lobad_rate == 'bounce_rate' then
+      if rnd_val <= tonumber(bounce_rate) then
+        -- look these up in future in a table
+        sim_result = "Bounced"
+        kumo.reject(550, 'rejecting all mail just because')
+      end
+      if rnd_val >= tonumber(defer_rate) then
+        sim_result = "Deferred"
+        kumo.reject('421', 'tempfailing this message because I can')
+      end
+    else
+      if rnd_val <= tonumber(defer_rate) then
+        sim_result = "Deferred"
+        kumo.reject('421', 'tempfailing this message because I can')
+      end
+      if rnd_val >= tonumber(bounce_rate) then
+        sim_result = "Bounced"
+        kumo.reject('550', 'rejecting all mail, just because')
+      end
+    end
+-- if you get here, the message will be accepted as "delivered"
+    print ("Message 'delivered'")
+    sim_result = "Delivered"
+  end 
+
+  return sim_result
+
+ end
+
+----------------------------------------------------------------------------
+--[[ End of bounce reflector function ]]--
+----------------------------------------------------------------------------
+
 ----------------------------------------------------------------------------
 --[[ Determine what to do on SMTP message reception ]]--
 ----------------------------------------------------------------------------
+
 kumo.on('smtp_server_message_received', function(msg)
 
   -- Assign tenant based on x-virtual-mta header.
   local tenant = msg:get_first_named_header_value('x-virtual-mta') or 'default'
+
+  local sim_result = bounce_sim(msg)
+
 -- For now, set all messages to dev/null
   msg:set_meta('queue',null)
+  print ("Queue set to null")
+
 --  msg:set_meta('tenant',tenant)
   msg:remove_x_headers { 'x-tenant' }
 
+
 -- SIGNING MUST COME LAST OR YOU COULD BREAK YOUR DKIM SIGNATURES
-  dkim_signer(msg)
+--  dkim_signer(msg)
 end)
 
 ----------------------------------------------------------------------------

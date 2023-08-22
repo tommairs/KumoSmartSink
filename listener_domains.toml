@@ -1,0 +1,21 @@
+# Listener Domains onfiguration
+# Set here how domains should behave
+
+['*']
+  log_arf = true
+  log_oob = true
+  relay_to = false
+
+['kdev2.aasland.com']
+  relay_to = true
+
+['bounce.kdev2.aasland.com']
+  log_oob = true
+
+['fbl.kdev2.aasland.com']
+  log_arf = true
+
+['kumomta.com']
+  log_arf = true
+  log_oob = true
+  relay_from = [ '0.0.0.0/0' ]

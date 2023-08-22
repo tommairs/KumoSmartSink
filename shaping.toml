@@ -1,0 +1,26 @@
+###################################
+# Aasland shaping file for in-house IPs
+###################################
+
+["default"]
+  replace_base = true
+  max_deliveries_per_connection = 10
+  #retry_interval = '2400s'
+  enable_tls = 'OpportunisticInsecure'
+  max_ready = 10000
+  connection_limit  = 40000
+  connect_timeout = '60s'
+  ehlo_timeout = '90s'
+  mail_from_timeout = '60s'
+  rcpt_to_timeout = '60s'
+  data_timeout = '90s'
+  rset_timeout = '90s'
+  idle_timeout = '120s'
+  prohibited_hosts = ['127.0.0.0/8']
+
+["not-yahoo.aasland.com"]
+  max_deliveries_per_connection = 10000
+  enable_tls = 'Disabled'
+  max_ready = 100000
+  connection_limit = 40000
+

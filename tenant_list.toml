@@ -1,0 +1,15 @@
+#####################################
+##  KumoMTA Tenant configurations  ##
+##################################### 
+
+["TENANT_TO_POOL"]
+  default = 'default'
+  alerts = 'priotity'
+
+["TENANT_PARAMS"]
+    alerts.egress_pool = 'priority'
+    alerts.retry_interval = '600 seconds'
+    alerts.max_age = '12 hours'
+    default.egress_pool = 'default'
+    default.retry_interval = '30 minutes'
+    default.max_age = '24 hours'

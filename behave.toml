@@ -11,30 +11,30 @@
 #
 ############################################
 
-[yahoo.com]
-  bounce 20
-  defer  50
+["yahoo.com"]
+  bounce = '20'
+  defer =  '50'
   # all remailing will be accepted and dropped
 
-[hotmail.com]
-  bounce 5
-  defer  10
+["hotmail.com"]
+  bounce = '5'
+  defer =  '10'
 
-[aol.com]
-  bounce 20
-  defer  20
+["aol.com"]
+  bounce = '20'
+  defer =  '20'
 
-[gmail.com]
-  bounce 10
-  defer  20
+["gmail.com"]
+  bounce = '10'
+  defer =  '20'
 
-[att.com]
-  bounce 20
-  defer  20
+["att.com"]
+  bounce = '20'
+  defer =  '20'
 
-[comcast.com]
-  bounce 40
-  defer  20
+["comcast.com"]
+  bounce = '40'
+  defer =  '20'
 
 
 
