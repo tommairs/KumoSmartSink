@@ -1,0 +1,21 @@
+# Egress Sources and Pools
+# TOML version:
+
+# Pool Definitions
+[pool.'default']
+[pool.'default'.'tomtest']
+
+[pool.'via_routes']
+[pool.'via_routes'.'tomtest']
+
+# Egress IP Definitions
+
+[source.'tomtest']
+  source_address = '10.2.0.9'
+  ehlo_domain = 'e.aasland.com'
+  remote_port = 587
+
+
+
+
+

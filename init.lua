@@ -161,16 +161,27 @@ local dkim_signer = dkim_sign:setup({'/opt/kumomta/etc/policy/dkim_data.toml'})
 function bounce_sim(msg)
   local sim_result = "NotSet"
   local domain = msg:recipient().domain
-  local fake_domain = ""
-  fake_domain = string.match(domain,'-[a-z0-9]*') -- assuming domain - not-yahoo.aasland.com
+  local fake_domain = string.match(domain,'-[a-z0-9]*') or "" -- assuming domain n the format: not-yahoo.aasland.com
   if (fake_domain ~= "" and fake_domain ~= nil) then 
     fake_domain = string.gsub(fake_domain,"-","")
     fake_domain = fake_domain .. ".com"
-  end 
+  end
+
+local sqlite = require 'sqlite'
+local sqlitepath = "/opt/kumomta/etc/policy/fakebouncedata.db"
+local db = sqlite.open(sqlitepath)
+
+--[[ get bounce codes for the current fake_domain ]]--
+local bounce_codes = db:execute('SELECT code, context FROM bounce_data WHERE domain = "' .. fake_domain .. '" AND code LIKE "5%"')
+local defer_codes = db:execute('SELECT code, context FROM bounce_data WHERE domain = "' .. fake_domain .. '" AND code LIKE "4%"')
+
   local behave = kumo.toml_load("/opt/kumomta/etc/policy/behave.toml")
   if behave[fake_domain] ~= nil then
     print ("Table exists")
 
+--  if #bounce_codes > 0 then
+    local bounce_val = math.random(#bounce_codes)
+    local defer_val = math.random(#defer_codes)
     local bounce_rate = behave[fake_domain].bounce
     local defer_rate = behave[fake_domain].defer
     if bounce_rate <= defer_rate then
@@ -178,10 +189,10 @@ function bounce_sim(msg)
     else
       lobad_rate = 'defer_rate'
     end
-    print ("fake domain is " .. fake_domain .. "")
-    print ("bounce rate is " .. bounce_rate .. "")
-    print ("defer rate is " .. defer_rate .. "")
-    print ("Lower value is " .. lobad_rate)
+--    print ("fake domain is " .. fake_domain .. "")
+--    print ("bounce rate is " .. bounce_rate .. "")
+--    print ("defer rate is " .. defer_rate .. "")
+--    print ("Lower value is " .. lobad_rate)
 
 
     -- Get a random number between 1 and 100
@@ -189,29 +200,41 @@ function bounce_sim(msg)
     -- if it is (higher-of-bounce-and-defer-rate) to 100 then send defer code
     -- if it fell through, send 250OK
     rnd_val = math.random(100)
-    print ("Random value is " .. rnd_val)
+--    print ("Random value is " .. rnd_val)
     if lobad_rate == 'bounce_rate' then
       if rnd_val <= tonumber(bounce_rate) then
         -- look these up in future in a table
         sim_result = "Bounced"
-        kumo.reject(550, 'rejecting all mail just because')
+--	print ("Bounce_Val = " .. bounce_val)
+--	print (tprint(bounce_codes))
+	local res_code = bounce_codes[bounce_val].code
+	local res_context = bounce_codes[bounce_val].context
+--	print ("Bounce code = " .. res_code)
+--	print ("Bounce context = " .. res_context)
+        kumo.reject(res_code,res_context)
       end
       if rnd_val >= tonumber(defer_rate) then
         sim_result = "Deferred"
-        kumo.reject('421', 'tempfailing this message because I can')
+        local res_code = defer_codes[defer_val].code
+        local res_context = defer_codes[defer_val].context
+        kumo.reject(res_code,res_context)
       end
     else
       if rnd_val <= tonumber(defer_rate) then
         sim_result = "Deferred"
-        kumo.reject('421', 'tempfailing this message because I can')
+        local res_code = defer_codes[defer_val].code
+        local res_context = defer_codes[defer_val].context
+        kumo.reject(res_code,res_context)
       end
       if rnd_val >= tonumber(bounce_rate) then
         sim_result = "Bounced"
-        kumo.reject('550', 'rejecting all mail, just because')
+	local res_code = bounce_codes[bounce_val].code
+	local res_context = bounce_codes[bounce_val].context
+        kumo.reject(res_code,res_context)
       end
     end
 -- if you get here, the message will be accepted as "delivered"
-    print ("Message 'delivered'")
+--    print ("Message 'delivered'")
     sim_result = "Delivered"
   end 
 

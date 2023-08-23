@@ -1,0 +1,9 @@
+## List of deferral codes to use with sim_bounce reflector
+
+["yahoo.com"]
+1 = "421,All servers busy, come back later"
+2 = "451, Server unavailable"
+3 = "421, No route to host"
+4 = "441, TS04 - stop sending for 2 hours"
+5 = "420, TS01 - pause sending for 30 minutes"
+

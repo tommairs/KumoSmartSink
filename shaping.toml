@@ -5,7 +5,6 @@
 ["default"]
   replace_base = true
   max_deliveries_per_connection = 10
-  #retry_interval = '2400s'
   enable_tls = 'OpportunisticInsecure'
   max_ready = 10000
   connection_limit  = 40000

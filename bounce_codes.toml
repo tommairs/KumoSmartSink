@@ -1,0 +1,9 @@
+## List of bounce codes to use with sim_bounce reflector
+
+["yahoo.com"]
+1 = "550,Bad source - go away"
+2 = "553,Invalid Credentials"
+3 = "501,Destination not found"
+4 = "550,Invalid user"
+5 = "550,Recipient not found"
+
