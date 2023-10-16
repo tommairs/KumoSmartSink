@@ -170,8 +170,11 @@ function bounce_sim(msg)
     fake_domain = string.gsub(fake_domain,"-","")
     fake_domain = fake_domain .. ".com"
   else
-    print ("NOTICE>> invalid domain format for this server.  Sending to dev/null. " .. domain)
-    msg:set_meta('queue','null')
+
+  --  print ("NOTICE>> invalid domain format for this server.  Sending to dev/null. " .. domain)
+  --  msg:set_meta('queue','null')
+  --
+    fake_domain = domain
   end
 
   local sqlite = require 'sqlite'
