@@ -18,14 +18,12 @@ following ways:
 * TBD: might add opens and clicks in the future
 
 Sample behave.toml file:
-
+```
 [yahoo.com]
-
   bounce 20
-
   defer  20
-
-  - all remailing will be accepted and dropped
+  # all remailing will be accepted and dropped
+```
 
 ## Install and Usage
 Install KumoMTA as per the instructions here: `https://docs.kumomta.com/userguide/installation/overview/`
@@ -36,13 +34,13 @@ Install KumoMTA as per the instructions here: `https://docs.kumomta.com/userguid
 Repeat this step for all domains you want to simulate
 
 Modify your DNS to add fake redirection to this new mail server.  For instance, if your sink server domain is `sink.mydomain.com` and the IP is 100.100.100.100, then you should add something like:
-
+```
 not-yahoo.sink.mydomain.com A  100.100.100.100
-i
 not-yahoo.sink.mydomain.com MX 10 not-yahoo.sink.mydomain.com
-
+```
 Now when you send an email to bob@not-yahoo.sink.mydomain.com, it will land at your sink server.
-\- -------------------------------------
+
+ -------------------------------------
 
 Clone this repo to a separate working folder.
 
