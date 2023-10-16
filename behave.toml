@@ -12,7 +12,7 @@
 ############################################
 
 ["yahoo.com"]
-  bounce = '20'
+  bounce = '10'
   defer =  '50'
   # all remailing will be accepted and dropped
 
@@ -21,20 +21,24 @@
   defer =  '10'
 
 ["aol.com"]
-  bounce = '20'
+  bounce = '05'
   defer =  '20'
 
 ["gmail.com"]
-  bounce = '10'
-  defer =  '20'
+  bounce = '1'
+  defer =  '5'
 
 ["att.com"]
   bounce = '20'
   defer =  '20'
 
 ["comcast.com"]
-  bounce = '40'
+  bounce = '10'
   defer =  '20'
 
+# Use this setting for any other random domains that are in the bounce response db
+["default"]
+  bounce = '10'
+  defer = '5'
 
 

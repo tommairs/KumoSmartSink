@@ -5,7 +5,8 @@
 ["default"]
   replace_base = true
   max_deliveries_per_connection = 10
-  enable_tls = 'OpportunisticInsecure'
+#  enable_tls = 'OpportunisticInsecure'
+  enable_tls = 'Disabled'
   max_ready = 10000
   connection_limit  = 40000
   connect_timeout = '60s'

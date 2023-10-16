@@ -3,17 +3,11 @@
 
 # Pool Definitions
 [pool.'default']
-[pool.'default'.'tomtest']
-
-[pool.'via_routes']
-[pool.'via_routes'.'tomtest']
+[pool.'default'.'test']
 
 # Egress IP Definitions
 
-[source.'tomtest']
-  source_address = '10.2.0.9'
-  ehlo_domain = 'e.aasland.com'
-  remote_port = 587
+[source.'test']
 
 
 

@@ -88,28 +88,31 @@ kumo.on('init', function()
   for _, port in ipairs { 25, 2025, 587 } do
     kumo.start_esmtp_listener {
       listen = '0:' .. tostring(port),
-      relay_hosts = {'0.0.0.0/0', '::0/0'},
       banner = "KumoMTA Sink Server and Reflector.",
-      hostname = "az.ksink.aasland.com",
-      max_messages_per_connection = 10,
     }
   end
+
 
 ----------------------------------------------------------------------------
 end) -- END OF THE INIT EVENT
 ----------------------------------------------------------------------------
 
+-- Called to validate the helo and/or ehlo domain
+kumo.on('smtp_server_ehlo', function(domain)
+  print ("NOTICE>> SMTP Listener hit FROM:" .. domain )
+end)
+
+
 -- Cache config files for 1 hour
-cached_toml_load = kumo.memoize(kumo.toml_load,{name='cache-toml-files-for-1-hour', ttl='1 hour', capacity = 100,})
+  cached_toml_load = kumo.memoize(kumo.toml_load,{name='cache-toml-files-for-1-hour', ttl='1 hour', capacity = 100,})
 
 -- Get the domains configuration
-    local listener_domains = require 'policy-extras.listener_domains'
-    kumo.on('get_listener_domain', listener_domains:setup({'/opt/kumomta/etc/policy/listener_domains.toml'}))
+  local listener_domains = require 'policy-extras.listener_domains'
+  kumo.on('get_listener_domain', listener_domains:setup({'/opt/kumomta/etc/policy/listener_domains.toml'}))
 
 --[[ ================================================================================== ]]--
 --          Load important globals here
 --[[ ================================================================================== ]]--
-
 
 
 -----------------------------------------------------
@@ -134,6 +137,7 @@ local get_shaping_config = shaping:setup()
 kumo.on('get_egress_path_config', shaper.get_egress_path_config)
 kumo.on('should_enqueue_log_record', shaper.should_enqueue_log_record)
 kumo.on('get_queue_config', function(domain, tenant, campaign)
+
   local cfg = shaper.get_queue_config(domain, tenant, campaign)
   if cfg then
     return cfg
@@ -154,45 +158,65 @@ end)
 local dkim_sign = require 'policy-extras.dkim_sign'
 local dkim_signer = dkim_sign:setup({'/opt/kumomta/etc/policy/dkim_data.toml'})
 
-
 ----------------------------------------------------------------------------
 --[[ Fake bounce reflector function ]]--
 ----------------------------------------------------------------------------
 function bounce_sim(msg)
+  print ("NOTICE>> Starting Bounce Simulation")
   local sim_result = "NotSet"
   local domain = msg:recipient().domain
-  local fake_domain = string.match(domain,'-[a-z0-9]*') or "" -- assuming domain n the format: not-yahoo.aasland.com
+  local fake_domain = string.match(domain,'-[a-z0-9]*') or "" -- assuming domain is in the format: not-yahoo.aasland.com
   if (fake_domain ~= "" and fake_domain ~= nil) then 
     fake_domain = string.gsub(fake_domain,"-","")
     fake_domain = fake_domain .. ".com"
+  else
+    print ("NOTICE>> invalid domain format for this server.  Sending to dev/null. " .. domain)
+    msg:set_meta('queue','null')
   end
 
-local sqlite = require 'sqlite'
-local sqlitepath = "/opt/kumomta/etc/policy/fakebouncedata.db"
-local db = sqlite.open(sqlitepath)
+  local sqlite = require 'sqlite'
+  local sqlitepath = "/opt/kumomta/etc/policy/fakebouncedata.db"
+  local db = sqlite.open(sqlitepath)
 
 --[[ get bounce codes for the current fake_domain ]]--
-local bounce_codes = db:execute('SELECT code, context FROM bounce_data WHERE domain = "' .. fake_domain .. '" AND code LIKE "5%"')
-local defer_codes = db:execute('SELECT code, context FROM bounce_data WHERE domain = "' .. fake_domain .. '" AND code LIKE "4%"')
+  local bounce_codes = db:execute('SELECT code, context FROM bounce_data WHERE domain = "' .. fake_domain .. '" AND code LIKE "5%"')
+  local defer_codes = db:execute('SELECT code, context FROM bounce_data WHERE domain = "' .. fake_domain .. '" AND code LIKE "4%"')
+  print ("NOTICE>> " .. fake_domain .. " has " .. #bounce_codes .. " bounce codes")
+
+  -- Check to see if the current domain is in the list of big MBPs
+  inMBPList = false
+  BigMBPs = {'yahoo.com','outlook.com','hotmail.com','gmail.com','comcast.com','aol.com'}
+  for _, v in pairs(BigMBPs) do
+    if v == fake_domain then 
+      inMBPList = true
+    end
+  end
+  if inMBPList == false then
+    fake_domain = "default"
+  end
 
   local behave = kumo.toml_load("/opt/kumomta/etc/policy/behave.toml")
   if behave[fake_domain] ~= nil then
-    print ("Table exists")
+    print ("NOTICE>> Table exists in behaviour list")  
 
---  if #bounce_codes > 0 then
+--check to see if there are any stored bounce codes for that domain - if not, skip it.
+  if #bounce_codes > 1 then
     local bounce_val = math.random(#bounce_codes)
     local defer_val = math.random(#defer_codes)
     local bounce_rate = behave[fake_domain].bounce
     local defer_rate = behave[fake_domain].defer
+    local defer_rate_m = 100-defer_rate
+    local bounce_rate_m = 100-bounce_rate
+
     if bounce_rate <= defer_rate then
       lobad_rate = 'bounce_rate'
     else
       lobad_rate = 'defer_rate'
     end
---    print ("fake domain is " .. fake_domain .. "")
---    print ("bounce rate is " .. bounce_rate .. "")
---    print ("defer rate is " .. defer_rate .. "")
---    print ("Lower value is " .. lobad_rate)
+    print ("Simulating domain " .. fake_domain .. "")
+    print ("Bounce rate is " .. bounce_rate .. "")
+    print ("Defer rate is " .. defer_rate .. "")
+    print ("Lower value is " .. lobad_rate)
 
 
     -- Get a random number between 1 and 100
@@ -200,42 +224,53 @@ local defer_codes = db:execute('SELECT code, context FROM bounce_data WHERE doma
     -- if it is (higher-of-bounce-and-defer-rate) to 100 then send defer code
     -- if it fell through, send 250OK
     rnd_val = math.random(100)
---    print ("Random value is " .. rnd_val)
+    print ("Random value is " .. rnd_val)
     if lobad_rate == 'bounce_rate' then
       if rnd_val <= tonumber(bounce_rate) then
         -- look these up in future in a table
         sim_result = "Bounced"
---	print ("Bounce_Val = " .. bounce_val)
---	print (tprint(bounce_codes))
+	print ("Bounce_Val = " .. bounce_val)
 	local res_code = bounce_codes[bounce_val].code
-	local res_context = bounce_codes[bounce_val].context
---	print ("Bounce code = " .. res_code)
---	print ("Bounce context = " .. res_context)
+	local res_context = tostring(bounce_codes[bounce_val].context)
+	print ("Bounce code = " .. res_code)
+	print ("Bounce context = " .. res_context)
         kumo.reject(res_code,res_context)
       end
-      if rnd_val >= tonumber(defer_rate) then
+      if rnd_val >= tonumber(defer_rate_m) then
         sim_result = "Deferred"
         local res_code = defer_codes[defer_val].code
-        local res_context = defer_codes[defer_val].context
+        local res_context = tostring(defer_codes[defer_val].context)
+	print ("Deferal code = " .. res_code)
+	print ("Deferal context = " .. res_context)
         kumo.reject(res_code,res_context)
       end
     else
       if rnd_val <= tonumber(defer_rate) then
         sim_result = "Deferred"
         local res_code = defer_codes[defer_val].code
-        local res_context = defer_codes[defer_val].context
+        local res_context = tostring(defer_codes[defer_val].context)
+	print ("Deferal code = " .. res_code)
+	print ("Deferal context = " .. res_context)
         kumo.reject(res_code,res_context)
       end
-      if rnd_val >= tonumber(bounce_rate) then
+      if rnd_val >= tonumber(bounce_rate_m) then
         sim_result = "Bounced"
 	local res_code = bounce_codes[bounce_val].code
-	local res_context = bounce_codes[bounce_val].context
+	local res_context = tostring(bounce_codes[bounce_val].context)
+	print ("Bounce code = " .. res_code)
+	print ("Bounce context = " .. res_context)
         kumo.reject(res_code,res_context)
       end
     end
+  end
+
 -- if you get here, the message will be accepted as "delivered"
---    print ("Message 'delivered'")
+    print ("Message was simulated as 'delivered' (to null)")
     sim_result = "Delivered"
+    msg:set_meta('queue','null')
+    print ("Simulation Processor Queue sent " .. domain .. " mail to null")
+
+
   end 
 
   return sim_result
@@ -252,39 +287,25 @@ local defer_codes = db:execute('SELECT code, context FROM bounce_data WHERE doma
 
 kumo.on('smtp_server_message_received', function(msg)
 
-  -- Assign tenant based on x-virtual-mta header.
-  local tenant = msg:get_first_named_header_value('x-virtual-mta') or 'default'
+  print ( "NOTICE>> incoming domain TO is " .. msg:recipient().domain )
 
+-- Invoke the bounce simulator function
   local sim_result = bounce_sim(msg)
+  print ("Message was simulated as " .. sim_result .. "\n")
 
--- For now, set all messages to dev/null
-  msg:set_meta('queue',null)
-  print ("Queue set to null")
-
---  msg:set_meta('tenant',tenant)
-  msg:remove_x_headers { 'x-tenant' }
-
-
--- SIGNING MUST COME LAST OR YOU COULD BREAK YOUR DKIM SIGNATURES
---  dkim_signer(msg)
 end)
 
 ----------------------------------------------------------------------------
 --[[ Determine what to do on HTTP message reception ]]--
 ----------------------------------------------------------------------------
 kumo.on('http_message_generated', function(msg)
-  -- Assign tenant based on X-Tenant header.
-  local tenant = msg:get_first_named_header_value('x-tenant') or 'default'
 
 -- For now, set all messages to dev/null
-  msg:set_meta('queue',null)
---  msg:set_meta('tenant',tenant)
-  msg:remove_x_headers { 'x-tenant' }
+  msg:set_meta('queue','null')
 
--- SIGNING MUST COME LAST OR YOU COULD BREAK YOUR DKIM SIGNATURES
---  dkim_signer(msg)
+  print ("NOTICE>> HTTP Queue sent " .. domain .. " mail to null")
+
 end)
-
 
 ----------------------------------------------------------------------------
 --[[ End of KumoMTA Smart Sink and Reflector ]]--
