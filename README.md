@@ -29,9 +29,14 @@ Sample behave.toml file:
 Install KumoMTA as per the instructions here: `https://docs.kumomta.com/userguide/installation/overview/`
 
 
-- Important. --------------------------
+- Important: There are 2 ways to use this code.
+1) Smarthost or gateway your traffic to the sink server so that you do not have to change your recipient domains.
+  - This had the advantage of not requireing a change to recipient addresses, but requires the ability to smarthost a message stream.
+2) Update your DNS so that any message sent to a fake domain will route to the sink.  
+  - This has the advantage of allowing specifica messages in a campaign to hit the simk for testing while not interfereing with others.  It has the disadvantage of requireing access to DNS and requires altering recipient domains.
 
-Repeat this step for all domains you want to simulate
+ --------------------------
+For option 2, repeat this step for all domains you want to simulate
 
 Modify your DNS to add fake redirection to this new mail server.  For instance, if your sink server domain is `sink.mydomain.com` and the IP is 100.100.100.100, then you should add something like:
 ```
