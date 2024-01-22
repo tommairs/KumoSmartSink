@@ -2,20 +2,20 @@
 ## A smart sink and reflector tool for email testing
 
 ## Preface
-This is offered as a free simulator if you want to build it yourself or experiment on your own, just follow the instructions below.
+This is offered as a free simulator. If you want to build it yourself or experiment on your own, just follow the instructions below.
 It can also be available with a very large database of response codes for a fee as a SaaS model.  If that is interesting to you send your inquiry to [sales@aasland.com](mailto:sales@aasland.com).
 
 ## Description
 This config policy defines [KumoMTA](https://kumomta.com) as a smart sink and
-reflector to simulate real world delivery testing.
+reflector to simulate real-world delivery testing.
 It will consume and process all incoming messages in the
 following ways:
-* incomming mail will be evaluated against the behaviour
+* incoming mail will be evaluated against the behaviour
     file at behave.toml
 * mail will be bounced (5xx), Deferred (4xx), or accepted (250)
     based on the percentages in that file per domain
-* TBD: will add oob and fbl responses in the future
-* TBD: might add opens and clicks in the future
+* TBD: Will add oob and fbl responses in the future
+* TBD: Might add opens and clicks in the future
 
 Sample behave.toml file:
 ```
@@ -29,16 +29,16 @@ Sample behave.toml file:
 Install KumoMTA as per the instructions here: `https://docs.kumomta.com/userguide/installation/overview/`
 
 
-- Important: There are 2 ways to use this code.
+- Important: There are two ways to use this code.
 1) Smarthost or gateway your traffic to the sink server so that you do not have to change your recipient domains.
-  - This had the advantage of not requireing a change to recipient addresses, but requires the ability to smarthost a message stream.
+  - This has the advantage of not requiring a change to recipient addresses, but requires the ability to smarthost a message stream.
 2) Update your DNS so that any message sent to a fake domain will route to the sink.  
-  - This has the advantage of allowing specifica messages in a campaign to hit the simk for testing while not interfereing with others.  It has the disadvantage of requireing access to DNS and requires altering recipient domains.
+  - This has the advantage of allowing specific messages in a campaign to hit the sink for testing while not interfering with others.  It has the disadvantage of requiring access to DNS and requires altering recipient domains.
 
  --------------------------
 For option 2, repeat this step for all domains you want to simulate
 
-Modify your DNS to add fake redirection to this new mail server.  For instance, if your sink server domain is `sink.mydomain.com` and the IP is 100.100.100.100, then you should add something like:
+Modify your DNS to add fake redirection to this new mail server. For instance, if your sink server domain is `sink.mydomain.com` and the IP is 100.100.100.100, then you should add something like:
 ```
 not-yahoo.sink.mydomain.com A  100.100.100.100
 not-yahoo.sink.mydomain.com MX 10 not-yahoo.sink.mydomain.com
@@ -72,15 +72,14 @@ Tail the system journal to make sure there are no errors
 journalctl -f -n 50 -u kumomta
 ```
 
-^^ if you leave this running you will see a running log of injection and processing activity.
+^^ If you leave this running, you will see a running log of injection and processing activity.
 
-You can test this from another terminal window with swaks:
+You can test this from another terminal window with [swaks](https://www.jetmore.org/john/code/swaks/):
 
 `swaks --to you@not-yahoo.yourdomain.com --from generator@your.sendingdomain.com --server localhost`
 
 If that all works, then you can set up your te4st campaign send by replacing all the real domains to fake domains.  
 IE: sally@yahoo.com becomes sally@not-yahoo.sink.mydomain.com based on the sample scenario above.
-
 
 
 
