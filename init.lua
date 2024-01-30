@@ -88,7 +88,9 @@ kumo.on('init', function()
   for _, port in ipairs { 25, 2025, 587 } do
     kumo.start_esmtp_listener {
       listen = '0:' .. tostring(port),
+      hostname = 'reflect.kumomta.com',
       banner = "KumoMTA Sink Server and Reflector.",
+      relay_hosts = {'0/0'},
     }
   end
 
@@ -97,10 +99,6 @@ kumo.on('init', function()
 end) -- END OF THE INIT EVENT
 ----------------------------------------------------------------------------
 
--- Called to validate the helo and/or ehlo domain
-kumo.on('smtp_server_ehlo', function(domain)
-  print ("NOTICE>> SMTP Listener hit FROM:" .. domain )
-end)
 
 
 -- Cache config files for 1 hour
@@ -170,7 +168,6 @@ function bounce_sim(msg)
     fake_domain = string.gsub(fake_domain,"-","")
     fake_domain = fake_domain .. ".com"
   else
-
   --  print ("NOTICE>> invalid domain format for this server.  Sending to dev/null. " .. domain)
   --  msg:set_meta('queue','null')
   --
@@ -271,8 +268,8 @@ function bounce_sim(msg)
     print ("Message was simulated as 'delivered' (to null)")
     sim_result = "Delivered"
     msg:set_meta('queue','null')
+    kumo.reject(250,"Simulated Delivery")
     print ("Simulation Processor Queue sent " .. domain .. " mail to null")
-
 
   end 
 
@@ -283,6 +280,24 @@ function bounce_sim(msg)
 ----------------------------------------------------------------------------
 --[[ End of bounce reflector function ]]--
 ----------------------------------------------------------------------------
+
+
+-- Called to validate the helo and/or ehlo domain
+kumo.on('smtp_server_ehlo', function(domain, conn_meta)
+  local thathost = conn_meta:get_meta('hostname')
+  local thatfrom = conn_meta:get_meta('received_from')
+  print ("EHLO FROM:" .. domain )
+--  print ("Hostname: " .. thathost )
+  print ("IP/Port : " .. thatfrom)
+end)
+
+
+kumo.on('smtp_server_mail_from', function(sender)
+	print("Sender mail from is " .. sender.email)
+  if sender.domain == 'bad.domain' then
+    kumo.reject(420, 'not thanks')
+  end
+end)
 
 ----------------------------------------------------------------------------
 --[[ Determine what to do on SMTP message reception ]]--
