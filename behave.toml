@@ -11,13 +11,18 @@
 #
 ############################################
 
+["yahoo.ca"]
+  bounce = '50'
+  defer =  '50'
+  # all remailing will be accepted and dropped
+
 ["yahoo.com"]
   bounce = '10'
   defer =  '50'
   # all remailing will be accepted and dropped
 
 ["hotmail.com"]
-  bounce = '5'
+  bounce = '100'
   defer =  '10'
 
 ["aol.com"]
@@ -25,7 +30,7 @@
   defer =  '20'
 
 ["gmail.com"]
-  bounce = '1'
+  bounce = '75'
   defer =  '5'
 
 ["att.com"]

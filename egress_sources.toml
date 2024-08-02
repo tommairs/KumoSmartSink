@@ -2,13 +2,35 @@
 # TOML version:
 
 # Pool Definitions
-[pool.'default']
-[pool.'default'.'test']
+[pool.'pool-0']
+[pool.'pool-0'.'ip-0']
+
+[pool.'pool-1']
+[pool.'pool-1'.'ip-1']
+
+[pool.'pool-2']
+[pool.'pool-2'.'ip-2']
+
+[pool.'pool-3']
+[pool.'pool-3'.'ip-1']
+[pool.'pool-3'.'ip-2']
+
+
 
 # Egress IP Definitions
 
-[source.'test']
+[source.'ip-0']
+source_address = '172.31.28.8'
 
+[source."ip-1"]
+socks5_proxy_server = '54.218.75.124:5000'
+socks5_proxy_source_address = '172.31.27.74'
+ehlo_domain = 'mta1.kumomta.com'
+
+[source."ip-2"]
+socks5_proxy_server = '54.218.75.124:5000'
+socks5_proxy_source_address = '172.31.20.6'
+ehlo_domain = 'mta2.kumomta.com'
 
 
 

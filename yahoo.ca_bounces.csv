@@ -1,0 +1,5 @@
+domain,code,context
+yahoo.ca,451,4.7.1 Received too many messages from a new or untrusted IP: 100.100.100.100 (Z27/6828692) (G28)
+yahoo.ca,451,Internal resource temporarily unavailable - https://community.mimecast.com/docs/DOC-1369#451 [__8EfOo0Oty2fp09HOzgSw.us354]
+yahoo.ca,451,4.4.2 This is a really long, multiline dispositon message. \451 This is a really long, multiline dispositon message. \ 451 This is a really long, multiline dispositon message. \451 This is a really long, multiline dispositon message. \451 This is a really long, multiline dispositon message. 
+yahoo.ca,550,5.5.0 mailbox unavailable \550 user has moved with no forwarding address \550 This is line 3 of a multi-line DSN
